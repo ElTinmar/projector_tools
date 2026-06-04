@@ -7,7 +7,7 @@ class AcerProjector:
     def __init__(
         self,
         port="/dev/ttyUSB0",
-        baudrate=19200,  # Optimized for Acer P1320W
+        baudrate=19200,  
         bytesize=serial.EIGHTBITS,  # 8 Data Bits
         parity=serial.PARITY_NONE,  # No Parity
         stopbits=serial.STOPBITS_ONE,  # 1 Stop Bit
@@ -15,8 +15,8 @@ class AcerProjector:
         rtscts=False,  # Disable Hardware Flow Control (RTS/CTS)
         dsrdtr=False,  # Disable Hardware Flow Control (DSR/DTR)
         timeout=1,  # 1-second read timeout
+        verbose: bool = False,
     ):
-        """Initializes all relevant RS232 serial connection parameters explicitly."""
         self.port = port
         self.baudrate = baudrate
         self.bytesize = bytesize
@@ -26,11 +26,11 @@ class AcerProjector:
         self.rtscts = rtscts
         self.dsrdtr = dsrdtr
         self.timeout = timeout
+        self.verbose = verbose
 
         self.connection = None
 
     def connect(self):
-        """Opens the serial port using the fully configured parameter set."""
         try:
             self.connection = serial.Serial(
                 port=self.port,
@@ -43,20 +43,12 @@ class AcerProjector:
                 dsrdtr=self.dsrdtr,
                 timeout=self.timeout,
             )
-            print(f"Successfully opened {self.port} with explicit parameters:")
-            print(
-                f" -> {self.baudrate} baud, {self.bytesize} data bits, "
-                f"Parity: {self.parity}, Stop Bits: {self.stopbits}"
-            )
-            print(
-                f" -> Flow Control - XON/XOFF: {self.xonxoff}, RTS/CTS: {self.rtscts}, DSR/DTR: {self.dsrdtr}"
-            )
         except serial.SerialException as e:
             print(f"Error opening serial port {self.port}: {e}")
             self.connection = None
             
     def send_command(self, command):
-        """Sends a command to the projector and returns the response."""
+        
         if not self.connection or not self.connection.is_open:
             print("Serial connection is not open.")
             return None
@@ -69,16 +61,15 @@ class AcerProjector:
             self.connection.reset_input_buffer()
             self.connection.reset_output_buffer()
 
-            # Send the command encoded as ASCII bytes
             print(f"Sending: {repr(full_command)}")
             self.connection.write(full_command.encode("ascii"))
 
-            # Give the projector a moment to process and respond
             time.sleep(0.1)
 
-            # Read the response (Acer usually echoes back or replies with 'OK')
             response = self.connection.read_all().decode("ascii", errors="ignore")
-            print(f"Response: {repr(response)}")
+            if self.verbose:
+                print(f"Response: {repr(response)}")
+
             return response
 
         except Exception as e:
@@ -97,19 +88,12 @@ class AcerProjector:
         """Closes the serial connection."""
         if self.connection and self.connection.is_open:
             self.connection.close()
-            print("Serial connection closed.")
 
 
-# --- Example Usage ---
 if __name__ == "__main__":
-    # Adjust '/dev/ttyUSB0' to match your actual device path
-    projector = AcerProjector(port="/dev/ttyUSB0", baudrate=9600)
 
+    projector = AcerProjector(port="/dev/ttyUSB0")
     projector.connect()
-
     if projector.connection:
-        # Example: Powering on the projector
         projector.power_on()
-
-        # Keep the connection alive or close it depending on your automation script
         projector.close()
