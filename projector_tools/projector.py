@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import serial
+from enum import Enum
 
 class ProjectorError(Exception): pass
 class TransmissionError(ProjectorError): pass
@@ -8,6 +9,14 @@ class ProjectorOFF(ProjectorError): pass
 class ConnectionFailed(ProjectorError): pass
 class CommandFailed(ProjectorError): pass
 
+class BytesEnum(bytes, Enum):
+    def __str__(self):
+        return self.name
+    
+class StrEnum(str, Enum):
+    def __str__(self):
+        return self.name
+    
 class Projector(ABC):
 
     @abstractmethod
