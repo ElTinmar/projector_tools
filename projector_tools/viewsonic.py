@@ -551,10 +551,10 @@ class ViewSonicProjector:
         self.write_timeout = write_timeout
         self.flow_control = flow_control
         self.verbose = verbose
-        self.ser = None
+        self.connection = None
 
         try:
-            self.ser = serial.Serial(
+            self.connection = serial.Serial(
                 port = port,
                 baudrate = baudrate,
                 bytesize = data_byte_length,
@@ -568,8 +568,8 @@ class ViewSonicProjector:
             raise ConnectionFailed
 
     def __del__(self):
-        if self.ser is not None:
-            self.ser.close()
+        if self.connection is not None:
+            self.connection.close()
 
     def power_on(self) -> None:
         '''
@@ -1136,34 +1136,34 @@ class ViewSonicProjector:
     def recover_serial(self) -> None:
         """Try to recover from a bad serial state."""
         try:
-            self.ser.close()
+            self.connection.close()
         except Exception:
             pass
         time.sleep(1)
         try:
-            self.ser.open()
+            self.connection.open()
             print("Serial port reopened successfully.")
         except Exception as e:
             print(f"Failed to recover serial: {e}")
         
     def _send_packet(self, packet: bytes) -> bytes:
 
-        self.ser.read_all()
+        self.connection.read_all()
 
         query = packet + checksum(packet)
 
         if self.verbose:
             print('>> ' + query.hex(' '))
 
-        self.ser.write(query)
+        self.connection.write(query)
 
-        response_header = self.ser.read(HEADER.NUM_BYTES)
+        response_header = self.connection.read(HEADER.NUM_BYTES)
         
         if len(response_header) != HEADER.NUM_BYTES:
             raise TransmissionError('failed to read response header')
         
         payload_num_bytes = payload_length(response_header)
-        response_payload = self.ser.read(payload_num_bytes)
+        response_payload = self.connection.read(payload_num_bytes)
 
         if len(response_payload) != payload_num_bytes:
             raise TransmissionError('payload size mismatch')

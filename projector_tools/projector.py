@@ -75,15 +75,15 @@ class SerialProjector(Projector):
         self.rtscts = rtscts
         self.dsrdtr = dsrdtr
         self.verbose = verbose
-        self.ser = None
+        self.connection = None
         
     def connect(self):
 
-        if self.ser and self.ser.is_open:
+        if self.connection and self.connection.is_open:
             return 
 
         try:
-            self.ser = serial.Serial(
+            self.connection = serial.Serial(
                 port=self.port,
                 baudrate=self.baudrate,
                 bytesize=self.data_byte_length,
@@ -100,8 +100,8 @@ class SerialProjector(Projector):
 
     def disconnect(self):
 
-        if self.ser and self.ser.is_open:
-            self.ser.close()
+        if self.connection and self.connection.is_open:
+            self.connection.close()
 
     def power_on(self):
         ...
