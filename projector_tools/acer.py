@@ -96,12 +96,10 @@ class AcerProjector(SerialProjector):
             print("Serial connection is not open.")
             return None
 
-        full_command = f"{command}\r"
-
         try:
             self.connection.reset_input_buffer()
             self.connection.reset_output_buffer()
-            self.connection.write(full_command.encode("ascii"))
+            self.connection.write(command.encode("ascii"))
 
             time.sleep(0.1)
 
@@ -116,15 +114,10 @@ class AcerProjector(SerialProjector):
             return None
 
     def power_on(self):
-        return self.send_command("* 0 IR 001")
+        return self.send_command(System.POWER_ON)
 
     def power_off(self):
-        return self.send_command("* 0 IR 002")
-
-    def close(self):
-        if self.connection and self.connection.is_open:
-            self.connection.close()
-
+        return self.send_command(System.POWER_OFF)
 
 if __name__ == "__main__":
 
