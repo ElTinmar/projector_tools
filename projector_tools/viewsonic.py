@@ -4,6 +4,14 @@ from typing import Optional, Dict, Callable
 import os
 import json
 from enum import Enum
+from projector import (
+    SerialProjector,
+    TransmissionError,
+    FunctionDisabled,
+    ProjectorOFF,
+    ConnectionFailed,
+    CommandFailed
+)
 
 # TODO add delay to functions that require delays
 
@@ -21,21 +29,6 @@ class BytesEnum(bytes, Enum):
     def __str__(self):
         return self.name
     
-class TransmissionError(Exception):
-    pass
-
-class FunctionDisabled(Exception):
-    pass
-
-class ProjectorOFF(Exception):
-    pass
-
-class ConnectionFailed(Exception):
-    pass
-
-class CommandFailed(Exception):
-    pass
-
 def int_to_two_bytes(i: int) -> bytes:
     if i >= 0:
         b = bytes([i, 0x00])
