@@ -10,7 +10,8 @@ from projector import (
     FunctionDisabled,
     ProjectorOFF,
     ConnectionFailed,
-    CommandFailed
+    CommandFailed,
+    BytesEnum
 )
 
 # TODO add delay to functions that require delays
@@ -21,13 +22,7 @@ POWER_ON_WAIT_SECONDS = 30
 POWER_OFF_WAIT_SECONDS = 20
 UPDATE_WAIT_SECONDS = 5
 
-class BytesEnum(bytes, Enum):
-    """
-    Enum where members are also (and must be) bytes
-    """
 
-    def __str__(self):
-        return self.name
     
 def int_to_two_bytes(i: int) -> bytes:
     if i >= 0:
