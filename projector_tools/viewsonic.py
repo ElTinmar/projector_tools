@@ -1,6 +1,5 @@
-import serial
 import time
-from typing import Optional, Dict, Callable
+from typing import Dict, Callable
 import os
 import json
 from .projector import (
@@ -8,7 +7,6 @@ from .projector import (
     TransmissionError,
     FunctionDisabled,
     ProjectorOFF,
-    ConnectionFailed,
     CommandFailed,
     BytesEnum
 )
@@ -518,58 +516,11 @@ def set_value_by_increment(
     if final_value != desired_value:
         raise RuntimeError('failed to set value')
 
-class ViewSonicProjector:
+class ViewSonicProjector(SerialProjector):
     '''
     Requires a crossover (null modem) cable for use with PC
     Only 3 pins need to be connected (RX,TX and GND)
     '''
-
-    VALID_BAUD_RATES = [2400,4800,9600,14400,19200,38400,115200]
-
-    def __init__(
-        self,
-        port: str = '/dev/ttyUSB0',
-        baudrate: int = 115200,
-        data_byte_length = serial.EIGHTBITS,
-        parity_check = serial.PARITY_NONE,
-        num_stop_bit: int = serial.STOPBITS_ONE,
-        timeout: Optional[float] = 10.0,
-        write_timeout: Optional[float] = 1.0,
-        flow_control: bool = False,
-        verbose: bool = False
-        ):
-
-        if baudrate not in self.VALID_BAUD_RATES:
-            raise ValueError(f'Supported baud rates are: {self.VALID_BAUD_RATES}')
-        
-        self.port = port
-        self.baudrate = baudrate
-        self.data_byte_length = data_byte_length
-        self.parity_check = parity_check
-        self.num_stop_bit = num_stop_bit
-        self.timeout = timeout
-        self.write_timeout = write_timeout
-        self.flow_control = flow_control
-        self.verbose = verbose
-        self.connection = None
-
-        try:
-            self.connection = serial.Serial(
-                port = port,
-                baudrate = baudrate,
-                bytesize = data_byte_length,
-                parity = parity_check,
-                stopbits = num_stop_bit,
-                timeout = timeout,
-                write_timeout= write_timeout,
-                rtscts = flow_control
-            )
-        except serial.SerialException:
-            raise ConnectionFailed
-
-    def __del__(self):
-        if self.connection is not None:
-            self.connection.close()
 
     def power_on(self) -> None:
         '''

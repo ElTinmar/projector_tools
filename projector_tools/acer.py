@@ -92,7 +92,7 @@ class ProjectorQuery(StrEnum):
     LAMP_STATE = "* 0 Lamp ?\r"
     LAMP_HOURS = "* 0 Lamp\r"
     ACTIVE_SOURCE = "* 0 Src ?\r"
-    
+
 class AcerProjector(SerialProjector):
 
     def send_command(self, command):
@@ -126,8 +126,5 @@ class AcerProjector(SerialProjector):
 
 if __name__ == "__main__":
 
-    projector = AcerProjector(port="/dev/ttyUSB0")
-    projector.connect()
-    if projector.connection:
+    with AcerProjector(port="/dev/ttyUSB0", baudrate=19200) as projector:
         projector.power_on()
-        projector.close()
