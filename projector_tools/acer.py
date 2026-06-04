@@ -88,6 +88,11 @@ class Picture(StrEnum):
     SHARPNESS = "* 0 IR 034\r"
     COLOR_RGB = "* 0 IR 048\r"
 
+class ProjectorQuery(StrEnum):
+    LAMP_STATE = "* 0 Lamp ?\r"
+    LAMP_HOURS = "* 0 Lamp\r"
+    ACTIVE_SOURCE = "* 0 Src ?\r"
+    
 class AcerProjector(SerialProjector):
 
     def send_command(self, command):
