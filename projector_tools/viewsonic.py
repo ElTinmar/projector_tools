@@ -3,8 +3,7 @@ import time
 from typing import Optional, Dict, Callable
 import os
 import json
-from enum import Enum
-from projector import (
+from .projector import (
     SerialProjector,
     TransmissionError,
     FunctionDisabled,

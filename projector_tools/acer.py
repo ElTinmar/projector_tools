@@ -1,5 +1,5 @@
 import time
-from projector import (
+from .projector import (
     SerialProjector,
     StrEnum
 )
