@@ -1,8 +1,17 @@
 import time
 from .projector import (
     SerialProjector,
+    ProjectorInfo,
     StrEnum
 )
+import serial.tools.list_ports 
+from typing import List
+import logging
+
+logger = logging.getLogger(__name__)
+
+POWER_ON_WAIT_SECONDS = 30
+POWER_OFF_WAIT_SECONDS = 20
 
 class System(StrEnum):
     POWER_ON = "* 0 IR 001\r"
@@ -93,7 +102,38 @@ class ProjectorQuery(StrEnum):
     LAMP_HOURS = "* 0 Lamp\r"
     ACTIVE_SOURCE = "* 0 Src ?\r"
 
+# TODO check if that is universal
+class LampState(StrEnum):
+    OFF = 'OFF'
+    WAIT = 'LAMP 0' 
+    ON = 'LAMP 1'
+
 class AcerProjector(SerialProjector):
+
+    @classmethod
+    def list_available_projectors(cls, *args, **kwargs) -> List[ProjectorInfo]:
+        available_projectors = []        
+        ports = serial.tools.list_ports.comports()
+        for port_info in ports:
+            port_name = port_info.device
+            for baudrate in sorted(cls.VALID_BAUD_RATES):
+                try:
+                    with cls(port=port_name, baudrate=baudrate, timeout=1.0) as proj:
+                        # Use a command that triggers a known response from acer projectors even if in standby
+                        response = proj.send_command(ProjectorQuery.LAMP_STATE) 
+                        if response in LampState:
+                            info = ProjectorInfo(
+                                name=port_name,
+                                projector_cls=cls,
+                                kwargs={"port": port_name, "baudrate": baudrate}
+                            )
+                            available_projectors.append(info)
+                            break
+                            
+                except Exception as e:
+                    logger.warning("Port %s baud %s failed: %s", port_name, baudrate, e)
+                
+        return available_projectors
 
     def send_command(self, command):
         
@@ -102,12 +142,9 @@ class AcerProjector(SerialProjector):
             return None
 
         try:
-            self.connection.reset_input_buffer()
-            self.connection.reset_output_buffer()
+            self.connection.read_all() # clear the line
             self.connection.write(command.encode("ascii"))
-
             time.sleep(0.1)
-
             response = self.connection.read_all().decode("ascii", errors="ignore")
             if self.verbose:
                 print(f"Response: {repr(response)}")
@@ -118,13 +155,16 @@ class AcerProjector(SerialProjector):
             print(f"Failed to execute command: {e}")
             return None
 
-    def power_on(self):
-        return self.send_command(System.POWER_ON)
+    def power_on(self) -> None:
+        self.send_command(System.POWER_ON)
+        time.sleep(POWER_ON_WAIT_SECONDS) 
 
     def power_off(self):
-        return self.send_command(System.POWER_OFF)
+        self.send_command(System.POWER_OFF)
+        time.sleep(POWER_OFF_WAIT_SECONDS) 
 
 if __name__ == "__main__":
 
     with AcerProjector(port="/dev/ttyUSB0", baudrate=19200) as projector:
-        projector.power_on()
+        print(projector.send_command(ProjectorQuery.LAMP_STATE))
+        #projector.power_on()

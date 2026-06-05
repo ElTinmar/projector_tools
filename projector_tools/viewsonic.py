@@ -1,15 +1,20 @@
 import time
-from typing import Dict, Callable
+import serial.tools.list_ports
+from typing import Dict, Callable, List
 import os
 import json
 from .projector import (
     SerialProjector,
+    ProjectorInfo,
     TransmissionError,
     FunctionDisabled,
     ProjectorOFF,
     CommandFailed,
     BytesEnum
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 # TODO add delay to functions that require delays
 
@@ -521,6 +526,31 @@ class ViewSonicProjector(SerialProjector):
     Requires a crossover (null modem) cable for use with PC
     Only 3 pins need to be connected (RX,TX and GND)
     '''
+
+    @classmethod
+    def list_available_projectors(cls, *args, **kwargs) -> List[ProjectorInfo]:
+        available_projectors = []        
+        ports = serial.tools.list_ports.comports()
+        for port_info in ports:
+            port_name = port_info.device
+            for baudrate in sorted(cls.VALID_BAUD_RATES):
+                try:
+                    with cls(port=port_name, baudrate=baudrate, timeout=1.0) as proj:
+                        # Use a command that triggers a known response from acer projectors even if in standby
+                        response = proj.get_power_status()
+                        if response in PowerStatus:
+                            info = ProjectorInfo(
+                                name=port_name,
+                                projector_cls=cls,
+                                kwargs={"port": port_name, "baudrate": baudrate}
+                            )
+                            available_projectors.append(info)
+                            break
+                            
+                except Exception as e:
+                    logger.warning("Port %s baud %s failed: %s", port_name, baudrate, e)
+                
+        return available_projectors
 
     def power_on(self) -> None:
         '''

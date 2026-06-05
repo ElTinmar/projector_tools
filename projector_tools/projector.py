@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 import serial
+import time
 from enum import Enum
+from dataclasses import dataclass, field
+from typing import Type,Tuple,Dict,List,Any
 
 class ProjectorError(Exception): pass
 class TransmissionError(ProjectorError): pass
@@ -17,7 +20,22 @@ class StrEnum(str, Enum):
     def __str__(self):
         return self.name
     
+@dataclass
+class ProjectorInfo:
+    name: str            
+    projector_cls: Type['Projector'] 
+    args: Tuple[Any, ...] = field(default_factory=tuple) 
+    kwargs: Dict[str, Any] = field(default_factory=dict) 
+
+    def instantiate(self) -> 'Projector':
+        return self.projector_cls(*self.args, **self.kwargs)    
+    
 class Projector(ABC):
+
+    @classmethod
+    @abstractmethod
+    def list_available_projectors(cls, *args, **kwargs) -> List[ProjectorInfo]:
+        pass
 
     @abstractmethod
     def connect(self):
@@ -95,6 +113,12 @@ class SerialProjector(Projector):
                 rtscts=self.rtscts,
                 dsrdtr=self.dsrdtr,
             )
+
+            # clear the line
+            self.connection.write(b"\r\r\r")
+            time.sleep(0.1)
+            self.connection.read_all()
+
         except serial.SerialException as e:
             raise ConnectionFailed(f"Failed to connect to {self.port}") from e
 
@@ -102,6 +126,7 @@ class SerialProjector(Projector):
 
         if self.connection and self.connection.is_open:
             self.connection.close()
+        self.connection = None
 
     def power_on(self):
         ...
