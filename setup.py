@@ -4,7 +4,7 @@ setup(
     name='projector_tools',
     python_requires='>=3.8',
     author='Martin Privat',
-    version='0.0.2',
+    version='0.0.3',
     packages=['projector_tools'],
     license='Creative Commons Attribution-Noncommercial-Share Alike license',
     description='Remote control video projectors',
