@@ -1,17 +1,16 @@
 import time
+import string
+import itertools
 from .projector import (
     SerialProjector,
     ProjectorInfo,
     StrEnum
 )
 import serial.tools.list_ports 
-from typing import List
+from typing import List, Dict
 import logging
 
 logger = logging.getLogger(__name__)
-
-POWER_ON_WAIT_SECONDS = 30
-POWER_OFF_WAIT_SECONDS = 20
 
 class System(StrEnum):
     POWER_ON = "* 0 IR 001\r"
@@ -110,6 +109,10 @@ class LampState(StrEnum):
 
 class AcerProjector(SerialProjector):
 
+    POWER_ON_WAIT_SECONDS = 30
+    POWER_OFF_WAIT_SECONDS = 20
+    RESPONSE_WAIT_SECONDS = 0.1
+
     @classmethod
     def list_available_projectors(cls, *args, **kwargs) -> List[ProjectorInfo]:
         available_projectors = []        
@@ -144,7 +147,7 @@ class AcerProjector(SerialProjector):
         try:
             self.connection.read_all() # clear the line
             self.connection.write(command.encode("ascii"))
-            time.sleep(0.1)
+            time.sleep(self.RESPONSE_WAIT_SECONDS)
             response = self.connection.read_all().decode("ascii", errors="ignore")
             if self.verbose:
                 print(f"Response: {repr(response)}")
@@ -157,12 +160,31 @@ class AcerProjector(SerialProjector):
 
     def power_on(self) -> None:
         self.send_command(System.POWER_ON)
-        time.sleep(POWER_ON_WAIT_SECONDS) 
+        time.sleep(self.POWER_ON_WAIT_SECONDS) 
 
     def power_off(self):
         self.send_command(System.POWER_OFF)
-        time.sleep(POWER_OFF_WAIT_SECONDS) 
+        time.sleep(self.POWER_OFF_WAIT_SECONDS) 
 
+    def scan(self, start_len: int = 3, end_len: int = 5) -> Dict[str, str]:
+        # try to lower RESPONSE_WAIT_SECONDS to 0.05 or lower
+        discovered_commands = {}
+        letters = string.ascii_uppercase
+
+        for length in range(start_len, end_len + 1):
+            print(f"Scanning length {length}...")
+            for chars in itertools.product(letters, repeat=length):
+                keyword = "".join(chars)
+                command = f"* 0 {keyword} ?\r"
+                print(command)
+                response = self.send_command(command)
+                
+                if response:
+                    print(f"FOUND MATCH: [{keyword}] -> {repr(response)}")
+                    discovered_commands[command] = response
+                        
+        return discovered_commands
+    
 if __name__ == "__main__":
 
     with AcerProjector(port="/dev/ttyUSB0", baudrate=19200) as projector:
